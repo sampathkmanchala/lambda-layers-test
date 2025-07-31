@@ -23,7 +23,7 @@ phases:
       - echo "Updating Lambda Layer..."
       - |
         if [ -f python.zip ]; then 
-          LAYER_VERSION_ARN=$(aws lambda publish-layer-version --layer-name flask --zip-file fileb://python.zip --query 'LayerVersionArn' --output text)
+          LAYER_VERSION_ARN=$(aws lambda publish-layer-version --layer-name requests-cb-layer --zip-file fileb://python.zip --query 'LayerVersionArn' --output text)
           echo "Layer updated with ARN $LAYER_VERSION_ARN"
         else 
           echo "Layer zip file not found"; exit 1
@@ -31,7 +31,7 @@ phases:
       - echo "Updating Lambda Function Code..."
       - |
         if [ -f deployment_package.zip ]; then 
-          aws lambda update-function-code --function-name flaskapp --zip-file fileb://deployment_package.zip
+          aws lambda update-function-code --function-name lambda-layer-chapter1 --zip-file fileb://deployment_package.zip
         else 
           echo "Deployment zip file not found"; exit 1
         fi
@@ -40,7 +40,7 @@ phases:
         RETRIES=5
         while [ $RETRIES -gt 0 ]; do
           if [ ! -z "$LAYER_VERSION_ARN" ]; then 
-            aws lambda update-function-configuration --function-name flaskapp --layers $LAYER_VERSION_ARN && break
+            aws lambda update-function-configuration --function-name lambda-layer-chapter1 --layers $LAYER_VERSION_ARN && break
           else 
             echo "Layer ARN not found"; exit 1
           fi
