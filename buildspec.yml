@@ -23,8 +23,8 @@ phases:
       - echo "Updating Lambda Layer..."
       - |
         if [ -f python.zip ]; then 
-          LAYER_VERSIONS=$(aws lambda list-layer-versions --layer-name requests-cb-layer  --query 'LayerVersions' --output text)
-          echo "Layer updated with ARN $LAYER_VERSIONS[0].LayerVersionArn" 
+          LAYER_VERSION_ARN=$(aws lambda publish-layer-version --layer-name requests-cb-layer --zip-file fileb://python.zip --query 'LayerVersionArn' --output text)
+          echo "Layer updated with ARN $LAYER_VERSION_ARN"
         else 
           echo "Layer zip file not found"; exit 1
         fi
@@ -40,7 +40,7 @@ phases:
         RETRIES=5
         while [ $RETRIES -gt 0 ]; do
           if [ ! -z "$LAYER_VERSION_ARN" ]; then 
-            aws lambda update-function-configuration --function-name lambda-layer-chapter1 --layers $LAYER_VERSIONS[0].LayerVersionArn && break
+            aws lambda update-function-configuration --function-name lambda-layer-chapter1 --layers $LAYER_VERSION_ARN && break
           else 
             echo "Layer ARN not found"; exit 1
           fi
