@@ -1,54 +1,69 @@
 version: 0.2
+env:
+  variables:
+    LAYER_ZIP: layer.zip
+    HASH_FILE: requirements.hash
 phases:
   install:
     runtime-versions:
       python: 3.11
     commands:
-      - echo "Installing dependencies..."
-      - if [ -f requirements.txt ]; then echo "requirements.txt found"; else echo "requirements.txt not found"; exit 1; fi
-      - pip install -r requirements.txt -t python
-      - echo "Checking installed packages..."
-      - ls -l python
-      - if [ -d "python" ] && [ "$(ls -A python)" ]; then echo "Python directory is not empty"; else echo "Python directory is empty"; exit 1; fi
+      - echo "Upgrading pip..."
+      - python -m pip install --upgrade pip
+  pre_build:
+    commands:
+      - echo "Computing hash of requirements.txt"
+      - md5sum requirements.txt > current.hash
+      - |
+        if [ -f $HASH_FILE ] && cmp -s current.hash $HASH_FILE; then
+          echo "No changes in requirements.txt. Using cached layer."
+          export LAYER_CHANGED=false
+        else
+          echo "requirements.txt changed. Rebuilding layer."
+          cp current.hash $HASH_FILE
+          export LAYER_CHANGED=true
+        fi
+
   build:
     commands:
-      - echo "Creating Layer Zip file..."
-      - zip -r python.zip python/
-      - if [ -s python.zip ]; then echo "Layer Zip file created successfully"; else echo "Error creating Layer zip file zip file is empty"; exit 1; fi
-      - echo "Zipping deployment package..."
-      - zip -r deployment_package.zip . -x '*.git*' 'python*' 'requirements.txt'
-      - if [ -s deployment_package.zip ]; then echo "Deployment Zip file created successfully"; else echo "Error creating deployment zip file"; exit 1; fi
+       -|
+        if [ "$LAYER_CHANGED" = true ]; then
+          echo "Installing dependencies into python/ directory"
+          rm -rf python
+          mkdir -p python
+          pip install -r requirements.txt -t python/
+          zip -r $LAYER_ZIP python
+        fi
   post_build:
     commands:
-      - echo "Updating Lambda Layer..."
       - |
-        if [ -f python.zip ]; then 
-          LAYER_VERSION_ARN=$(aws lambda publish-layer-version --layer-name requests-cb-layer --zip-file fileb://python.zip --query 'LayerVersionArn' --output text)
-          echo "Layer updated with ARN $LAYER_VERSION_ARN"
-        else 
-          echo "Layer zip file not found"; exit 1
+        if [ "$LAYER_CHANGED" = true ]; then
+          echo "Publishing new Lambda layer version"
+          LAYER_VERSION=$(aws lambda publish-layer-version \
+            --layer-name "$LAYER_NAME" \
+            --compatible-runtimes "$PYTHON_VERSION" \
+            --zip-file "fileb://$LAYER_ZIP" \
+            --query 'Version' \
+            --output text)
+          echo "New layer version: $LAYER_VERSION"
+        else
+          echo "Getting latest published layer version"
+          LAYER_VERSION=$(aws lambda list-layer-versions \
+            --layer-name "$LAYER_NAME" \
+            --query 'LayerVersions[0].Version' \
+            --output text)
+          echo "Reusing existing layer version: $LAYER_VERSION"
         fi
-      - echo "Updating Lambda Function Code..."
-      - |
-        if [ -f deployment_package.zip ]; then 
-          aws lambda update-function-code --function-name lambda-layer-chapter1 --zip-file fileb://deployment_package.zip
-        else 
-          echo "Deployment zip file not found"; exit 1
-        fi
-      - echo "Updating Lambda Function Configuration to use the new layer..."
-      - |
-        RETRIES=5
-        while [ $RETRIES -gt 0 ]; do
-          if [ ! -z "$LAYER_VERSION_ARN" ]; then 
-            aws lambda update-function-configuration --function-name lambda-layer-chapter1 --layers $LAYER_VERSION_ARN && break
-          else 
-            echo "Layer ARN not found"; exit 1
-          fi
-          RETRIES=$((RETRIES-1))
-          echo "Retrying in 10 seconds..."
-          sleep 10
-        done
-        if [ $RETRIES -eq 0 ]; then
-          echo "Failed to update Lambda function configuration after multiple attempts"; exit 1
-        fi
-      - echo "DONE!!"
+        - echo "Updating Lambda function to use layer version $LAYER_VERSION"
+        - aws lambda update-function-configuration \
+          --function-name "$LAMBDA_FUNCTION_NAME" \
+          --layers "arn:aws:lambda:$AWS_REGION:$AWS_ACCOUNT_ID:layer:$LAYER_NAME:$LAYER_VERSION"
+  artifacts:
+    files:
+      - layer.zip
+      - requirements.hash
+
+  cache:
+    paths:
+      - 'python/**/*'
+      - 'requirements.hash'
