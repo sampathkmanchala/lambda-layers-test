@@ -8,5 +8,5 @@ def lambda_handler(event, context):
     address = fake.street_address()
     return {
         'statusCode': request.status_code,
-        'body': {"html":request.text,"address":address
+        'body': {"html":request.text, "address":address}
     }
