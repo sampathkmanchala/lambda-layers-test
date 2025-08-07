@@ -69,8 +69,7 @@ phases:
         fi
       - echo "Updating Lambda Function Configuration to use the new layer..."
       - sleep 40
-      - aws lambda update-function-configuration --function-name $LAMBDA_FUNCTION_NAME --layers "arn:aws:lambda:$AWS_REGION:$AWS_ACCOUNT_ID:layer:$LAYER_NAME:$LAYER_VERSION" \
-           --query 'FunctionName' --output text
+      - aws lambda update-function-configuration --function-name $LAMBDA_FUNCTION_NAME --layers "arn:aws:lambda:$AWS_REGION:$AWS_ACCOUNT_ID:layer:$LAYER_NAME:$LAYER_VERSION"
       # - |
       #   RETRIES=3
       #   while [ $RETRIES -gt 0 ]; do
