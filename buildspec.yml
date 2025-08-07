@@ -60,24 +60,33 @@ phases:
           echo "Reusing existing layer version: $LAYER_VERSION"
         fi
 
-      - echo "Updating Lambda function to use layer version $LAYER_VERSION"
-      - echo "$LAMBDA_FUNCTION_NAME"
-      - echo "arn:aws:lambda:$AWS_REGION:$AWS_ACCOUNT_ID:layer:$LAYER_NAME:$LAYER_VERSION"
-      - aws lambda update-function-configuration --function-name "$LAMBDA_FUNCTION_NAME" --layers "arn:aws:lambda:$AWS_REGION:$AWS_ACCOUNT_ID:layer:$LAYER_NAME:$LAYER_VERSION"
-      - echo "Updating Lambda Function Code..."
+      - echo "Updating Lambda Layer..."
       - |
-        RESULT = $(aws lambda update-function-code --function-name "$LAMBDA_FUNCTION_NAME" --zip-file fileb://deployment_package.zip --query 'FunctionName' --output text)
-        RETRIES=5
+        if [ -f deployment_package.zip ]; then 
+          aws lambda update-function-code --function-name $LAMBDA_FUNCTION_NAME --zip-file fileb://deployment_package.zip
+        else 
+          echo "Deployment zip file not found"; exit 1
+        fi
+      - echo "Updating Lambda Function Configuration to use the new layer..."
+      - |
+        RETRIES=3
         while [ $RETRIES -gt 0 ]; do
-          if [ -z "$RESULT" ]; then 
-            RESULT = $(aws lambda update-function-code --function-name "$LAMBDA_FUNCTION_NAME" --zip-file fileb://deployment_package.zip --query 'FunctionName' --output text)
+          # if [ ! -z "$LAYER_VERSION_ARN" ]; then 
+           FUNCTION_NAME=$(aws lambda update-function-configuration --function-name $LAMBDA_FUNCTION_NAME --layers "arn:aws:lambda:$AWS_REGION:$AWS_ACCOUNT_ID:layer:$LAYER_NAME:$LAYER_VERSION" \
+           --query 'FunctionName' --output text)
+          if [ ! -z "$FUNCTION_NAME" ]; then 
+            echo "Success" && break
           else 
-            echo "Success"; exit 1
+            echo "FUNCTION_NAME not found"; exit 1
           fi
           RETRIES=$((RETRIES-1))
           echo "Retrying in 10 seconds..."
           sleep 10
         done
+        if [ $RETRIES -eq 0 ]; then
+          echo "Failed to update Lambda function configuration after multiple attempts"; exit 1
+        fi
+      - echo "DONE!!"
        
 
 artifacts:
