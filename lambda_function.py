@@ -10,6 +10,8 @@ def lambda_handler(event, context):
     address = fake.street_address()
     qr_code = create_qr_code('"hellow world"', encoding='utf16')
     print("qr_code:",qr_code)
+
+    
     
     return {
         'statusCode': request.status_code,
