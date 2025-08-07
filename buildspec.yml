@@ -65,7 +65,20 @@ phases:
       - echo "arn:aws:lambda:$AWS_REGION:$AWS_ACCOUNT_ID:layer:$LAYER_NAME:$LAYER_VERSION"
       - aws lambda update-function-configuration --function-name "$LAMBDA_FUNCTION_NAME" --layers "arn:aws:lambda:$AWS_REGION:$AWS_ACCOUNT_ID:layer:$LAYER_NAME:$LAYER_VERSION"
       - echo "Updating Lambda Function Code..."
-      - aws lambda update-function-code --function-name "$LAMBDA_FUNCTION_NAME" --zip-file fileb://deployment_package.zip
+      - |
+        RESULT = $(aws lambda update-function-code --function-name "$LAMBDA_FUNCTION_NAME" --zip-file fileb://deployment_package.zip)
+        RETRIES=5
+        while [ $RETRIES -gt 0 ]; do
+          if [ -z "$RESULT" ]; then 
+            RESULT = $(aws lambda update-function-code --function-name "$LAMBDA_FUNCTION_NAME" --zip-file fileb://deployment_package.zip)
+          else 
+            echo "Success"; exit 1
+          fi
+          RETRIES=$((RETRIES-1))
+          echo "Retrying in 10 seconds..."
+          sleep 10
+        done
+       
 
 artifacts:
   files:
