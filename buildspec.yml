@@ -36,7 +36,7 @@ phases:
           zip -r $LAYER_ZIP python
         fi
       - echo "Zipping deployment package..."
-      - zip -r deployment_package.zip . -x '*.git*' 'python*' 'requirements.txt'
+      - zip -r deployment_package.zip . -x '*.git*' 'python*'
       - if [ -s deployment_package.zip ]; then echo "Deployment Zip file created successfully"; else echo "Error creating deployment zip file"; exit 1; fi
   post_build:
     commands:
