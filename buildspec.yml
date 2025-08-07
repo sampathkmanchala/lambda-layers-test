@@ -66,11 +66,11 @@ phases:
       - aws lambda update-function-configuration --function-name "$LAMBDA_FUNCTION_NAME" --layers "arn:aws:lambda:$AWS_REGION:$AWS_ACCOUNT_ID:layer:$LAYER_NAME:$LAYER_VERSION"
       - echo "Updating Lambda Function Code..."
       - |
-        RESULT = $(aws lambda update-function-code --function-name "$LAMBDA_FUNCTION_NAME" --zip-file fileb://deployment_package.zip)
+        RESULT = $(aws lambda update-function-code --function-name "$LAMBDA_FUNCTION_NAME" --zip-file fileb://deployment_package.zip --query 'FunctionName' --output text)
         RETRIES=5
         while [ $RETRIES -gt 0 ]; do
           if [ -z "$RESULT" ]; then 
-            RESULT = $(aws lambda update-function-code --function-name "$LAMBDA_FUNCTION_NAME" --zip-file fileb://deployment_package.zip)
+            RESULT = $(aws lambda update-function-code --function-name "$LAMBDA_FUNCTION_NAME" --zip-file fileb://deployment_package.zip --query 'FunctionName' --output text)
           else 
             echo "Success"; exit 1
           fi
