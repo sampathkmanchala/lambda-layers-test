@@ -59,12 +59,14 @@ phases:
             --output text)
           echo "Reusing existing layer version: $LAYER_VERSION"
         fi
+
       - echo "Updating Lambda function to use layer version $LAYER_VERSION"
       - aws lambda update-function-configuration \
           --function-name "$LAMBDA_FUNCTION_NAME" \
           --layers "arn:aws:lambda:$AWS_REGION:$AWS_ACCOUNT_ID:layer:$LAYER_NAME:$LAYER_VERSION"
       - echo "Updating Lambda Function Code..."
       - aws lambda update-function-code --function-name "$LAMBDA_FUNCTION_NAME" --zip-file fileb://deployment_package.zip
+
 artifacts:
   files:
     - layer.zip
