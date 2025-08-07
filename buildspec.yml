@@ -9,9 +9,9 @@ phases:
   install:
     runtime-versions:
       python: 3.11
-    commands:
-      - echo "Upgrading pip..."
-      - python -m pip install --upgrade pip
+    # commands:
+    #   - echo "Upgrading pip..."
+    #   - python -m pip install --upgrade pip
   pre_build:
     commands:
       - echo "Computing hash of requirements.txt"
@@ -27,7 +27,7 @@ phases:
         fi
   build:
     commands:
-      - |
+      - echo "Checking if layer changed"
         if [ "$LAYER_CHANGED" = true ]; then
           echo "Installing dependencies into python/ directory"
           rm -rf python
@@ -35,6 +35,9 @@ phases:
           pip install -r requirements.txt -t python/
           zip -r $LAYER_ZIP python
         fi
+      - echo "Zipping deployment package..."
+      - zip -r deployment_package.zip . -x '*.git*' 'python*'
+      - if [ -s deployment_package.zip ]; then echo "Deployment Zip file created successfully"; else echo "Error creating deployment zip file"; exit 1; fi
   post_build:
     commands:
       - |
@@ -55,9 +58,10 @@ phases:
             --output text)
           echo "Reusing existing layer version: $LAYER_VERSION"
         fi
-
-        echo "Updating Lambda function to use layer version $LAYER_VERSION"
-        aws lambda update-function-configuration \
+      - echo "Updating Lambda Function Code..."
+      - aws lambda update-function-code --function-name "$LAMBDA_FUNCTION_NAME" --zip-file fileb://deployment_package.zip
+      - echo "Updating Lambda function to use layer version $LAYER_VERSION"
+      - aws lambda update-function-configuration \
           --function-name "$LAMBDA_FUNCTION_NAME" \
           --layers "arn:aws:lambda:$AWS_REGION:$AWS_ACCOUNT_ID:layer:$LAYER_NAME:$LAYER_VERSION"
 artifacts:
