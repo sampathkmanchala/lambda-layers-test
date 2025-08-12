@@ -5,7 +5,8 @@ Resources:
         Type: AWS::Lambda::Function
         Properties:
           Name: hello-world-lambda
+          Alias: "live"
           CurrentVersion: "1"
           TargetVersion: "1"
-          Alias: "live"
+          
 
