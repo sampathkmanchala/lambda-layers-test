@@ -39,37 +39,37 @@ phases:
       - echo "Zipping deployment package..."
       - zip -r deployment_package.zip . -x '*.git*' 'python*'
       - if [ -s deployment_package.zip ]; then echo "Deployment Zip file created successfully"; else echo "Error creating deployment zip file"; exit 1; fi
-  post_build:
-    commands:
-      - |
-        if [ "$LAYER_CHANGED" = true ]; then
-          echo "Publishing new Lambda layer version"
-          LAYER_VERSION=$(aws lambda publish-layer-version \
-            --layer-name "$LAYER_NAME" \
-            --compatible-runtimes "$PYTHON_VERSION" \
-            --zip-file "fileb://$LAYER_ZIP" \
-            --query 'Version' \
-            --output text)
-          echo "New layer version: $LAYER_VERSION"
-        else
-          echo "Getting latest published layer version"
-          LAYER_VERSION=$(aws lambda list-layer-versions \
-            --layer-name "$LAYER_NAME" \
-            --query 'LayerVersions[0].Version' \
-            --output text)
-          echo "Reusing existing layer version: $LAYER_VERSION"
-        fi
+  # post_build:
+  #   commands:
+  #     - |
+  #       if [ "$LAYER_CHANGED" = true ]; then
+  #         echo "Publishing new Lambda layer version"
+  #         LAYER_VERSION=$(aws lambda publish-layer-version \
+  #           --layer-name "$LAYER_NAME" \
+  #           --compatible-runtimes "$PYTHON_VERSION" \
+  #           --zip-file "fileb://$LAYER_ZIP" \
+  #           --query 'Version' \
+  #           --output text)
+  #         echo "New layer version: $LAYER_VERSION"
+  #       else
+  #         echo "Getting latest published layer version"
+  #         LAYER_VERSION=$(aws lambda list-layer-versions \
+  #           --layer-name "$LAYER_NAME" \
+  #           --query 'LayerVersions[0].Version' \
+  #           --output text)
+  #         echo "Reusing existing layer version: $LAYER_VERSION"
+  #       fi
 
-      - echo "Updating Lambda Layer..."
-      - |
-        if [ -f deployment_package.zip ]; then 
-          aws lambda update-function-code --function-name $LAMBDA_FUNCTION_NAME --zip-file fileb://deployment_package.zip
-        else 
-          echo "Deployment zip file not found"; exit 1
-        fi
-      - echo "Updating Lambda Function Configuration to use the new layer..."
-      - sleep 40
-      - aws lambda update-function-configuration --function-name $LAMBDA_FUNCTION_NAME --layers "arn:aws:lambda:$AWS_REGION:$AWS_ACCOUNT_ID:layer:$LAYER_NAME:$LAYER_VERSION"
+  #     - echo "Updating Lambda Layer..."
+  #     - |
+  #       if [ -f deployment_package.zip ]; then 
+  #         aws lambda update-function-code --function-name $LAMBDA_FUNCTION_NAME --zip-file fileb://deployment_package.zip
+  #       else 
+  #         echo "Deployment zip file not found"; exit 1
+  #       fi
+  #     - echo "Updating Lambda Function Configuration to use the new layer..."
+  #     - sleep 40
+  #     - aws lambda update-function-configuration --function-name $LAMBDA_FUNCTION_NAME --layers "arn:aws:lambda:$AWS_REGION:$AWS_ACCOUNT_ID:layer:$LAYER_NAME:$LAYER_VERSION"
       # - |
       #   RETRIES=3
       #   while [ $RETRIES -gt 0 ]; do
@@ -95,6 +95,8 @@ artifacts:
   files:
     - layer.zip
     - requirements.hash
+    - workflows.yaml
+    - deployment_package.zip
 
 cache:
   paths:
