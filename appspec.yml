@@ -4,8 +4,9 @@ Resources:
     - LambdaLayersLambda:
         Type: AWS::Lambda::Function
         Properties:
-          Name: lambda-layer-chapter1
+          Name: hello-world-lambda
+          Alias: "live"
           CurrentVersion: "1"
           TargetVersion: "1"
-          Alias: "live"
+          
 
