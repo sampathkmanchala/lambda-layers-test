@@ -1,10 +1,10 @@
-Description: Resources for the Staging Workflows
 
-AWSTemplateFormatVersion: 2010-09-09
+version: 0.0
+Resources:
+    - LambdaLayersLambda:
+        Type: AWS::Lambda::Function
+        Properties:
+          Name: lambda-layer-chapter1
+          CurrentVersion: "1"
+          TargetVersion: "1"
 
-LambdaLayersLambda:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: lambda-layer-chapter1
-      CurrentVersion: "1"
-      TargetVersion: "1"
