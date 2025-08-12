@@ -95,7 +95,7 @@ artifacts:
   files:
     - layer.zip
     - requirements.hash
-    - workflows.yaml
+    - appspec.yml
     - deployment_package.zip
 
 cache:
