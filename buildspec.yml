@@ -8,7 +8,7 @@ env:
 phases:
   install:
     runtime-versions:
-      python: 3.11
+      python: 3.13
     # commands:
     #   - echo "Upgrading pip..."
     #   - python -m pip install --upgrade pip
@@ -27,15 +27,15 @@ phases:
         fi
   build:
     commands:
-      - echo "Checking if layer changed"
-      - |
-        if [ "$LAYER_CHANGED" = true ]; then
-          echo "Installing dependencies into python/ directory"
-          rm -rf python
-          mkdir -p python
-          pip install -r requirements.txt -t python/
-          zip -r $LAYER_ZIP python
-        fi
+      # - echo "Checking if layer changed"
+      # - |
+      #   if [ "$LAYER_CHANGED" = true ]; then
+      #     echo "Installing dependencies into python/ directory"
+      #     rm -rf python
+      #     mkdir -p python
+      #     pip install -r requirements.txt -t python/
+      #     zip -r $LAYER_ZIP python
+      #   fi
       - echo "Zipping deployment package..."
       - zip -r deployment_package.zip . -x '*.git*' 'python*'
       - if [ -s deployment_package.zip ]; then echo "Deployment Zip file created successfully"; else echo "Error creating deployment zip file"; exit 1; fi
